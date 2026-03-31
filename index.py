@@ -401,4 +401,6 @@ def validate_inputs(num_reservoirs, num_drains, available, allocation, max_need)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import os
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
