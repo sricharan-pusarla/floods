@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Prevention Simulation - Banker's Algorithm</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-content">
+            <h1>🌊 Flood Prevention Simulation</h1>
+            <p class="subtitle">Using Banker's Algorithm for Safe Water Release Management</p>
+        </div>
+    </header>
+
+    <main>
+        <!-- CONCEPT EXPLANATION -->
+        <section class="card info-card">
+            <h2>📖 How It Works</h2>
+            <div class="concept-grid">
+                <div class="concept-item">
+                    <div class="concept-icon">🏗️</div>
+                    <h3>Reservoirs = Processes</h3>
+                    <p>Each reservoir acts as a process that needs drainage resources to safely release water.</p>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon">🚰</div>
+                    <h3>Drainage = Resources</h3>
+                    <p>Drainage channels (canals, rivers, spillways) are shared resources with limited capacity.</p>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon">✅</div>
+                    <h3>Safe State = No Flood</h3>
+                    <p>If a safe sequence exists where all reservoirs can drain, the system is flood-free.</p>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon">⚠️</div>
+                    <h3>Unsafe State = Flood Risk</h3>
+                    <p>If no safe sequence exists, releasing water could cause catastrophic flooding.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENARIO SELECTION -->
+        <section class="card">
+            <h2>🎯 Select Scenario</h2>
+            <p>Choose a preset rainfall scenario or create your own custom configuration.</p>
+            <div class="preset-buttons">
+                <button class="preset-btn safe" onclick="loadPreset('normal_monsoon')">
+                    <span class="btn-icon">🌧️</span>
+                    <span class="btn-label">Normal Monsoon</span>
+                    <span class="btn-desc">Safe scenario</span>
+                </button>
+                <button class="preset-btn warning" onclick="loadPreset('heavy_rainfall')">
+                    <span class="btn-icon">⛈️</span>
+                    <span class="btn-label">Heavy Rainfall</span>
+                    <span class="btn-desc">Risky scenario</span>
+                </button>
+                <button class="preset-btn danger" onclick="loadPreset('flash_flood')">
+                    <span class="btn-icon">🌊</span>
+                    <span class="btn-label">Flash Flood</span>
+                    <span class="btn-desc">Emergency scenario</span>
+                </button>
+                <button class="preset-btn custom" onclick="loadPreset('custom')">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-label">Custom</span>
+                    <span class="btn-desc">Your own data</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCENARIO INFO -->
+        <section class="card" id="scenario-info" style="display:none;">
+            <h2 id="scenario-title">Scenario</h2>
+            <p id="scenario-desc"></p>
+            <div class="scenario-meta">
+                <span class="meta-badge" id="meta-reservoirs"></span>
+                <span class="meta-badge" id="meta-drains"></span>
+                <span class="meta-badge" id="meta-rainfall"></span>
+            </div>
+        </section>
+
+        <!-- CONFIGURATION -->
+        <section class="card" id="config-section" style="display:none;">
+            <h2>⚙️ System Configuration</h2>
+            
+            <!-- Dimensions (for custom) -->
+            <div id="dimension-controls" style="display:none;">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Number of Reservoirs (Processes)</label>
+                        <input type="number" id="num-reservoirs" min="1" max="10" value="3" onchange="rebuildMatrices()">
+                    </div>
+                    <div class="input-group">
+                        <label>Number of Drainage Channels (Resources)</label>
+                        <input type="number" id="num-drains" min="1" max="10" value="3" onchange="rebuildMatrices()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Level Indicators -->
+            <div id="water-levels-section">
+                <h3>💧 Reservoir Water Levels</h3>
+                <div id="water-levels-container" class="water-levels"></div>
+            </div>
+
+            <!-- Available Resources -->
+            <div class="matrix-section">
+                <h3>🟢 Available Drainage Capacity</h3>
+                <p class="matrix-desc">Currently free drainage capacity across all channels</p>
+                <div id="available-container" class="matrix-row"></div>
+            </div>
+
+            <!-- Allocation Matrix -->
+            <div class="matrix-section">
+                <h3>📊 Allocation Matrix (Currently Used Drainage)</h3>
+                <p class="matrix-desc">How much drainage each reservoir is currently using</p>
+                <div id="allocation-container"></div>
+            </div>
+
+            <!-- Max Need Matrix -->
+            <div class="matrix-section">
+                <h3>📈 Maximum Need Matrix (Worst-case Drainage Need)</h3>
+                <p class="matrix-desc">Maximum drainage each reservoir might need during peak rainfall</p>
+                <div id="max-container"></div>
+            </div>
+
+            <!-- Need Matrix (calculated) -->
+            <div class="matrix-section" id="need-section" style="display:none;">
+                <h3>📉 Need Matrix (Remaining Drainage Required)</h3>
+                <p class="matrix-desc">Need = Max - Allocation (Additional drainage that may be requested)</p>
+                <div id="need-container"></div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="checkSafety()">
+                    🔍 Check System Safety
+                </button>
+            </div>
+        </section>
+
+        <!-- RESULTS -->
+        <section class="card" id="results-section" style="display:none;">
+            <h2>📋 Safety Analysis Results</h2>
+            
+            <div id="result-banner" class="result-banner"></div>
+
+            <!-- Safe Sequence -->
+            <div id="safe-sequence-section" style="display:none;">
+                <h3>🔄 Safe Drainage Sequence</h3>
+                <p>Order in which reservoirs can safely release water:</p>
+                <div id="safe-sequence" class="sequence-display"></div>
+            </div>
+
+            <!-- Flood Risk -->
+            <div id="flood-risk-section" style="display:none;">
+                <h3>🚨 Flood Risk Reservoirs</h3>
+                <p>These reservoirs CANNOT safely drain and may overflow:</p>
+                <div id="flood-risk" class="sequence-display danger-seq"></div>
+            </div>
+
+            <!-- Step by Step -->
+            <div id="steps-section" style="display:none;">
+                <h3>📝 Step-by-Step Execution</h3>
+                <div id="steps-container"></div>
+            </div>
+        </section>
+
+        <!-- RELEASE REQUEST -->
+        <section class="card" id="request-section" style="display:none;">
+            <h2>📤 Simulate Water Release Request</h2>
+            <p>Test if a specific reservoir can request additional drainage capacity without causing floods.</p>
+            
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Select Reservoir</label>
+                    <select id="request-reservoir"></select>
+                </div>
+            </div>
+            
+            <div class="matrix-section">
+                <h3>Request Vector (Additional drainage needed)</h3>
+                <div id="request-vector-container" class="matrix-row"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-warning" onclick="submitRequest()">
+                    🚀 Submit Release Request
+                </button>
+            </div>
+
+            <!-- Request Result -->
+            <div id="request-result" style="display:none;">
+                <div id="request-banner" class="result-banner"></div>
+                <div id="request-details"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>Flood Prevention Simulation | Banker's Algorithm | Operating Systems Concept Applied to Real-World Problem</p>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
